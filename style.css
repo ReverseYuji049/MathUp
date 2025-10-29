@@ -1,3 +1,4 @@
+
 @import url("https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&display=swap");
 
 * {
@@ -20,7 +21,7 @@ footer {
   padding: 10px 0;
   text-align: center;
   background-color: black;
-  color: white;
+  color: rgb(255, 255, 255);
   font-family: "Pixelify Sans", sans-serif;
   font-size: medium;
   z-index: 10;
@@ -45,7 +46,7 @@ header {
   border-radius: 8px;
   font-family: "Pixelify Sans", sans-serif;
   font-size: 40px;
-  color: white;
+  color: rgb(255, 255, 255);
   text-align: center;
   padding: 16px 36px;    /* ajuste para botão menor/maior */
   cursor: pointer;
@@ -63,7 +64,20 @@ header {
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: white;
+  margin: 0;
+  background-image: url(assets/mathup-start-screen-pixilart.png);
+  background-size: cover;
+  background-position: top;
+  background-repeat: no-repeat;
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  image-rendering: pixelated;  
+       
 }
 
 /* Efeito ao passar o mouse */
@@ -84,4 +98,24 @@ header {
   text-decoration: none;
   color: inherit;
   display: block;
+}
+
+.pergunta{
+  background: linear-gradient(180deg, #ffbb01 0%, #d89c00 100%);
+  border: 4px solid goldenrod;
+  border-radius: 8px;
+  font-family: "Pixelify Sans", sans-serif;
+  font-size: 30px;
+  color: rgb(255, 255, 255);
+  text-align: center;
+  padding: 16px 36px;    /* ajuste para botão menor/maior */
+  cursor: pointer;
+  transform: translate(920px, 120px);
+  box-shadow: 0 6px 0 #a37200;
+  transition: all 0.15s ease;
+  user-select: none;
+  display: inline-flex;  /* inline-flex faz ele caber ao conteúdo */
+  justify-content: center;
+  align-items: center;
+  width: auto;      
 }
