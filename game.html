@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MathUp - Game</title>
+  <link rel="stylesheet" href="styles/style.css">
+  <style>
+    /* Complemento de estilos específicos do jogo */
+    body { margin:0; padding:0; overflow:hidden; background:#000; }
+    :root { --offset: 0vh; --transition-duration: 1600ms; }
+    .viewport { position:relative; width:100%; height:calc(100vh - var(--header-h) - var(--footer-h)); overflow:hidden; margin-top:var(--header-h); }
+    .world { position:relative; left:0; top:0; width:100%; height:100%; }
+    .scene { position:absolute; left:0; top:0; width:100%; height:calc(100vh - var(--header-h) - var(--footer-h)); display:flex; align-items:center; justify-content:center; color:#fff; font-size:2rem; transform: translateY(100vh); transition: transform var(--transition-duration) cubic-bezier(.22,.9,.24,1); will-change: transform; }
+
+    /* fundos: usa imagens do projeto */
+    .scene-0 { background-image: url('assets/Ground.jpeg'); background-size:cover; background-position:center; }
+    .scene-1 { background-image: url('assets/Stone Tiles(1).png'); background-size:cover; background-position:center; }
+    .scene-2 { background: linear-gradient(#bfe0ff,#8fb4d6); }
+    .scene-3 { background: linear-gradient(#6b4a2a,#4a2f1a); }
+
+    /* personagem fixo (sprite) - centralizado entre header e footer */
+    .character { position:fixed; left:50%; top: calc(var(--header-h) + (100vh - var(--header-h) - var(--footer-h)) * 0.5); transform: translateX(-50%); width:360px; height:360px; z-index:60; pointer-events:none; background-repeat:no-repeat; background-position: 0 0; background-size: 100% 100%; }
+    /* personagem usa transição em transform para subir passo a passo; a subida é controlada por JS (cumulative steps) */
+    .character { transition: transform var(--transition-duration) cubic-bezier(.22,.9,.24,1); }
+
+    /* question box overlay (left center, gold theme) */
+    .question-box { position:fixed; left:16px; top:50%; transform:translateY(-50%); z-index:70; background:rgba(0,0,0,0.35); padding:10px 14px; border-radius:8px; border:2px solid #ffbb01; display:flex; flex-direction:column; gap:8px; align-items:flex-start; color:#ffbb01; min-width:220px; }
+    .question-box .question-text { color:#ffbb01; font-weight:700; text-align:left; width:100%; font-size: clamp(22px, 3.5vw, 36px); line-height: 1.15; }
+    .question-box input { padding:8px 10px; font-size:18px; border:2px solid rgba(255,187,1,0.4); border-radius:6px; width:140px; background:rgba(0,0,0,0.1); color:#fff; }
+    .question-box .controls { display:flex; flex-direction:column; gap:10px; align-items:flex-start; }
+    /* timer bar (low height) */
+    .timer-wrapper { display:flex; flex-direction:column; gap:6px; align-items:flex-end; margin-top:6px; }
+    .timer-text { color:#ffdd66; font-weight:700; font-size:0.95rem; }
+    .timer-bar { width:140px; max-width:34vw; background:rgba(255,255,255,0.06); border-radius:6px; overflow:hidden; height:8px; }
+    .timer-fill { width:100%; height:100%; background: linear-gradient(90deg, #ffdd66, #ffbb01); transition: width linear; }
+    .question-box #feedback { margin-left:8px; font-weight:600; color:#ffbb01; }
+
+    /* Botão de ativar música no canto superior direito */
+    .music-toggle { position:fixed; right:16px; top:16px; z-index:9999; background:#ffbb01; color:#000; border:none; padding:8px 12px; border-radius:6px; font-weight:700; cursor:pointer; font-size:0.85rem; }
+    .music-toggle:hover { background:#ffdd66; }
+    .music-toggle.hidden { display:none; }
+
+    .hidden { display:none; }
+  </style>
+</head>
+<body>
+
+  <!-- Botão para ativar música (aparece apenas se necessário) -->
+  <button id="musicToggle" class="music-toggle hidden">Ativar Música</button>
+
+  <header>
+    <h1 id="phaseLabel">Lvl 1/4</h1>
+  </header>
+
+  <div class="viewport">
+    <div id="world" class="world">
+      <!-- scenes serão geradas por JS -->
+    </div>
+  </div>
+
+  <div id="character" class="character" aria-hidden="true" role="img" aria-label="Personagem"></div>
+
+  <div class="question-box" id="questionBox">
+    <div class="question-text" id="questionText">Pergunta</div>
+    <div class="controls">
+      <div id="options" style="display:flex;flex-direction:column;gap:8px;align-items:flex-start;width:100%;"></div>
+      <div class="timer-wrapper" style="width:100%; align-items:stretch;">
+        <div id="timerText" class="timer-text">10s</div>
+        <div class="timer-bar" aria-hidden="true">
+          <div id="timerFill" class="timer-fill"></div>
+        </div>
+      </div>
+    </div>
+    <div id="feedback" aria-live="polite"></div>
+  </div>
+
+  <!-- debug button removed -->
+
+  <footer>
+    <div id="phaseName">Início</div>
+  </footer>
+
+  <script src="scripts/game.js"></script>
+
+</body>
+</html>
