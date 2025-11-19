@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MathUp - Vitória</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Jersey+15&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --overlay-color: rgba(0,0,0,0.65);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: 'Jersey 15', cursive;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 24px 4vw;
+      background: #000 url('assets/animacaoVitoria.gif') center/cover no-repeat fixed;
+      color: #ffeb7a;
+      text-shadow: 2px 2px 6px rgba(0,0,0,0.8);
+    }
+    .card {
+      background: var(--overlay-color);
+      border: 3px solid #ffbb01;
+      border-radius: 18px;
+      padding: 32px 48px;
+      text-align: center;
+      max-width: 520px;
+      width: min(520px, 100%);
+      box-shadow: 0 15px 35px rgba(0,0,0,0.65);
+    }
+    h1 {
+      font-size: clamp(2.8rem, 6vw, 4.5rem);
+      margin: 0 0 18px;
+      letter-spacing: 1px;
+    }
+    p {
+      font-size: clamp(1.3rem, 3vw, 2rem);
+      margin: 0 0 32px;
+      color: #ffe7bf;
+    }
+    .actions {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    a {
+      text-decoration: none;
+    }
+    .btn {
+      padding: 12px 28px;
+      border-radius: 999px;
+      border: 2px solid #ffbb01;
+      background: #1b1b1b;
+      color: #ffbb01;
+      font-size: 1.4rem;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 160px;
+    }
+    .btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+    }
+    .music-toggle {
+      position: fixed;
+      left: 24px;
+      bottom: 24px;
+      border-radius: 999px;
+      border: 2px solid #ffbb01;
+      background: rgba(0,0,0,0.65);
+      color: #ffbb01;
+      font-size: 1.2rem;
+      padding: 10px 18px;
+      cursor: pointer;
+      display: none;
+    }
+    .music-toggle.visible { display: inline-flex; }
+  </style>
+</head>
+<body>
+  <main class="card" role="alert">
+    <h1>Você chegou ao topo!!</h1>
+    <p>Parabéns, aventureiro! Continue treinando para se tornar um mestre da matemática.</p>
+    <div class="actions">
+      <a href="game.html" class="btn">Jogar novamente</a>
+      <a href="index.html" class="btn">Tela inicial</a>
+    </div>
+  </main>
+  <div class="score" id="topScore">Maior pontuação: 0</div>
+  <button id="musicButton" class="music-toggle">Ativar música da vitória</button>
+  <audio id="victoryAudio" src="songs/Música de Vitória.mp3" preload="auto" loop></audio>
+  <script>
+    (function(){
+      const audio = document.getElementById('victoryAudio');
+      const button = document.getElementById('musicButton');
+      if (audio) audio.volume = 0.63;
+      const scoreText = document.getElementById('topScore');
+      try {
+        const best = parseInt(localStorage.getItem('mathup_highscore'), 10) || 0;
+        if (scoreText) scoreText.textContent = `Maior pontuação: ${best}`;
+      } catch (e) {
+        if (scoreText) scoreText.textContent = 'Maior pontuação: 0';
+      }
+      async function tryPlay(){
+        if (!audio) return;
+        try {
+          await audio.play();
+          button.classList.remove('visible');
+        } catch (err) {
+          button.classList.add('visible');
+        }
+      }
+      document.addEventListener('DOMContentLoaded', tryPlay, { once: true });
+      window.addEventListener('click', tryPlay, { once: true });
+      button.addEventListener('click', tryPlay);
+    })();
+  </script>
+</body>
+</html>

@@ -1,22 +1,84 @@
 // Lógica principal do jogo extraída de game.html
 
-// Cenas: name = nome exibido no footer, label = texto do header, cls = classe, question/answer usados na question-box
+// Cenas configuradas com 7 fases, perguntas geradas dinamicamente por categoria
 const scenes = [
-  { name: 'Início', label: 'Lvl 1/4', cls: 'scene-0', question: 'Quanto é 5 + 3?', answer: 8 },
-  { name: 'Zona Rochosa', label: 'Lvl 2/4', cls: 'scene-1', question: 'Quanto é 6 + 6?', answer: 12 },
-  { name: 'Neve', label: 'Lvl 3/4', cls: 'scene-2', question: 'Quanto é 3 + 4?', answer: 7 },
-  { name: 'Topo', label: 'Lvl 4/4', cls: 'scene-3', question: '', answer: 0 }
+  { name: 'Início', label: 'Lvl 1/7', cls: 'scene-0' },
+  { name: 'Transição', label: 'Lvl 2/7', cls: 'scene-1' },
+  { name: 'Zona Rochosa', label: 'Lvl 3/7', cls: 'scene-2' },
+  { name: 'Transição 2', label: 'Lvl 4/7', cls: 'scene-3' },
+  { name: 'Gelo', label: 'Lvl 5/7', cls: 'scene-4' },
+  { name: 'Transição 3', label: 'Lvl 6/7', cls: 'scene-5' },
+  { name: 'Topo', label: 'Lvl 7/7', cls: 'scene-6' }
 ];
+
+// Perguntas carregadas do gerador
+const allPhaseQuestions = (window.Questions && typeof window.Questions.generateAllPhases === 'function')
+  ? window.Questions.generateAllPhases()
+  : [];
+const PHASE_QUESTION_COUNT = (window.Questions && window.Questions.QUESTIONS_PER_PHASE) || 5;
+let currentQuestionIdx = 0;
+let currentQuestion = null;
+
+function randInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function shuffleArray(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function buildFallbackOptions(correct) {
+  const opts = new Set([correct]);
+  const base = Math.abs(correct) || 1;
+  let guard = 0;
+  while (opts.size < 4 && guard < 40) {
+    guard += 1;
+    const delta = Math.max(1, Math.round(base * 0.2));
+    const candidate = correct + randInt(-delta - 3, delta + 3);
+    if (candidate !== correct) opts.add(candidate);
+  }
+  return shuffleArray(Array.from(opts));
+}
+
+function ensurePhaseData(index) {
+  if (allPhaseQuestions[index] && Array.isArray(allPhaseQuestions[index].questions) && allPhaseQuestions[index].questions.length) {
+    return allPhaseQuestions[index];
+  }
+  const fallbackQuestions = [];
+  for (let i = 0; i < PHASE_QUESTION_COUNT; i++) {
+    const a = randInt(1, 20);
+    const b = randInt(1, 20);
+    const text = `Quanto é ${a} + ${b}?`;
+    const answer = a + b;
+    fallbackQuestions.push({
+      id: `fallback-${index}-${i}`,
+      text,
+      answer,
+      options: buildFallbackOptions(answer)
+    });
+  }
+  const fallbackPhase = { phase: index + 1, questions: fallbackQuestions };
+  allPhaseQuestions[index] = fallbackPhase;
+  console.warn(`Fase ${index + 1} sem perguntas do gerador. Aplicando fallback simples.`);
+  return fallbackPhase;
+}
 
 const world = document.getElementById('world');
 const phaseLabel = document.getElementById('phaseLabel');
 const phaseName = document.getElementById('phaseName');
 const character = document.getElementById('character');
 const feedback = document.getElementById('feedback');
+const scoreBoard = document.getElementById('scoreBoard');
+let score = 0;
+let highScore = 0;
 // Audio effects: background music is handled by parent (play.html). Keep local SFX for clicks and phase pass.
 // Background music (re-added)
 const bgMusic = new Audio('songs/MusicaOpcao1.mp3');
-bgMusic.loop = true; bgMusic.preload = 'auto'; bgMusic.volume = 0.35;
+bgMusic.loop = true; bgMusic.preload = 'auto'; bgMusic.volume = 0.245;
 let bgMusicStarted = false;
 const musicToggleBtn = document.getElementById('musicToggle');
 // Try to autoplay on load; if blocked, show button
@@ -44,8 +106,9 @@ document.addEventListener('DOMContentLoaded', tryStartMusic);
 // Also try on first user gesture
 window.addEventListener('click', tryStartMusic, { once: true });
 // Local SFX
-const clickSfx = new Audio('soundeffects/Click.wav'); clickSfx.preload = 'auto'; clickSfx.volume = 0.9;
-const passSfx = new Audio('soundeffects/PassardeFase.wav'); passSfx.preload = 'auto'; passSfx.volume = 0.9;
+const clickSfx = new Audio('soundeffects/Click.wav'); clickSfx.preload = 'auto'; clickSfx.volume = 0.63;
+const passSfx = new Audio('soundeffects/PassardeFase.wav'); passSfx.preload = 'auto'; passSfx.volume = 0.63;
+const fallSfx = new Audio('soundeffects/Hit.wav'); fallSfx.preload = 'auto'; fallSfx.volume = 0.63;
 function playPass(){ try{ passSfx.currentTime = 0; passSfx.play().catch(()=>{}); } catch(e){} }
 // global handler: play click SFX for any button press (delegation)
 document.addEventListener('click', (e) => {
@@ -174,11 +237,9 @@ function renderScenes(){
 function updateHeaderFooter(){
   phaseLabel.textContent = scenes[current].label;
   phaseName.textContent = scenes[current].name;
-  // atualiza pergunta à direita
-  const q = document.getElementById('questionText');
-  if(q) q.textContent = scenes[current].question || '';
 }
 
+// Avança para a próxima fase (chama animação de transição)
 function advancePhase(){
   if(current >= scenes.length -1) return;
   const currentDiv = world.querySelector('.scene[data-index="' + current + '"]');
@@ -273,7 +334,8 @@ function advancePhase(){
         // para animação do sprite e volta para quadro idle
         stopSpriteAnimation();
         character.classList.remove('animate');
-        // renderiza a próxima pergunta (se houver) e reinicia o timer
+        // reset question index para a nova fase e renderiza pergunta
+        currentQuestionIdx = 0;
         renderQuestion();
         nextDiv.removeEventListener('transitionend', onEndHandler);
       }
@@ -293,134 +355,154 @@ function disableOptions(){
   opts.forEach(b => b.disabled = true);
 }
 
-function checkAnswer(selectedOption){
-  // ignore if question not active
-  if(!questionActive) return;
-  questionActive = false;
-  // stop timer
-  stopAndResetTimer();
-  // disable further clicks
-  disableOptions();
-  // se já estamos na última fase, ignora cliques
-  if(current >= scenes.length -1) return;
-  // verifica opção
-  if(selectedOption !== scenes[current].answer){
-    showFeedback('Incorreto. Tente novamente.', true);
-    // redireciona para a tela de derrota após um pequeno delay para permitir o som de clique/feedback
-    setTimeout(() => { window.location.href = 'derrota.html'; }, 700);
-    return;
-  }
-  showFeedback('Correto!', false);
-  setTimeout(() => {
-    advancePhase();
-  }, 600);
-}
-
-function renderOptions(){
-  const optionsContainer = document.getElementById('options');
-  optionsContainer.innerHTML = ''; // limpa opções anteriores
-  const correctAnswer = scenes[current].answer;
-  const usedIndexes = new Set(); // para garantir que não repetimos opções
-
-  // adiciona a resposta correta em uma posição aleatória
-  const correctIndex = Math.floor(Math.random() * 4);
-  for(let i = 0; i < 4; i++){
-    if(i === correctIndex){
-      const btn = document.createElement('button');
-      btn.textContent = correctAnswer;
-      btn.className = 'botoes';
-      btn.style.backgroundColor = '#27ae60';
-      btn.addEventListener('click', () => { checkAnswer(correctAnswer); });
-      optionsContainer.appendChild(btn);
-      usedIndexes.add(correctAnswer);
-    } else {
-      // gera uma opção aleatória que não seja igual à resposta correta nem a outras opções já usadas
-      let randomOption;
-      do {
-        randomOption = Math.floor(Math.random() * 20); // opções de 0 a 19
-      } while(usedIndexes.has(randomOption));
-      const btn = document.createElement('button');
-      btn.textContent = randomOption;
-      btn.className = 'botoes';
-      btn.style.backgroundColor = '#c0392b';
-      btn.addEventListener('click', () => { checkAnswer(randomOption); });
-      optionsContainer.appendChild(btn);
-      usedIndexes.add(randomOption);
-    }
-  }
-
-  // ensure buttons are enabled when rendered
-  questionActive = true;
-}
-
-let timerId = null;
-let timeLeft = 10;
 const DEFAULT_TIMER_SECONDS = 10;
+let timerId = null;
+let timeLeft = DEFAULT_TIMER_SECONDS;
 
-function resetTimerBar() {
+function resetTimerBar(){
   const fill = document.getElementById('timerFill');
   const timerText = document.getElementById('timerText');
   if (fill) {
     fill.style.transition = 'none';
     fill.style.width = '100%';
-    // force reflow so next transition applies
     void fill.offsetWidth;
   }
   if (timerText) timerText.textContent = `${DEFAULT_TIMER_SECONDS}s`;
 }
 
-function startTimer(){
-  const duration = DEFAULT_TIMER_SECONDS;
-  timeLeft = duration;
-  const timerDisplay = document.getElementById('timerText');
-  const fill = document.getElementById('timerFill');
-  if (timerDisplay) timerDisplay.textContent = `${timeLeft}s`;
-  // clear any previous timer
-  if (timerId) { clearInterval(timerId); timerId = null; }
-  // reset and start the bar transition
-  if (fill) {
-    fill.style.transition = 'none';
-    fill.style.width = '100%';
-    // force reflow
-    void fill.offsetWidth;
-    // animate to 0 over duration seconds
-    fill.style.transition = `width ${duration}s linear`;
-    // small timeout to ensure transition is applied
-    setTimeout(() => { fill.style.width = '0%'; }, 20);
+function stopAndResetTimer(){
+  if (timerId) {
+    clearInterval(timerId);
+    timerId = null;
   }
-  // numeric countdown (keeps seconds display in sync)
-  timerId = setInterval(() => {
-    timeLeft -= 1;
-    if (timerDisplay) timerDisplay.textContent = `${Math.max(0, timeLeft)}s`;
-    if(timeLeft <= 0){
-       clearInterval(timerId);
-       timerId = null;
-       // tempo esgotado, desativa opções e avança
-       questionActive = false;
-       disableOptions();
-       showFeedback('Tempo esgotado!', true);
-       // ensure fill is empty
-       const f = document.getElementById('timerFill'); if (f) f.style.width = '0%';
-       // vai para a tela de derrota em vez de avançar de fase
-       setTimeout(() => { window.location.href = 'derrota.html'; }, 800);
-     }
-  }, 1000);
-}
-
-function stopAndResetTimer() {
-  if (timerId) { clearInterval(timerId); timerId = null; }
   resetTimerBar();
 }
 
-function renderQuestion(){
+function startTimer(){
+  const timerText = document.getElementById('timerText');
+  const fill = document.getElementById('timerFill');
+  timeLeft = DEFAULT_TIMER_SECONDS;
+  if (timerText) timerText.textContent = `${timeLeft}s`;
+  if (timerId) {
+    clearInterval(timerId);
+    timerId = null;
+  }
+  if (fill) {
+    fill.style.transition = 'none';
+    fill.style.width = '100%';
+    void fill.offsetWidth;
+    fill.style.transition = `width ${DEFAULT_TIMER_SECONDS}s linear`;
+    requestAnimationFrame(() => { fill.style.width = '0%'; });
+  }
+  timerId = setInterval(() => {
+    timeLeft -= 1;
+    if (timerText) timerText.textContent = `${Math.max(0, timeLeft)}s`;
+    if (timeLeft <= 0) {
+      clearInterval(timerId);
+      timerId = null;
+      questionActive = false;
+      disableOptions();
+      if (fill) fill.style.width = '0%';
+      showFeedback('Tempo esgotado!', true);
+      triggerFallAndLose();
+    }
+  }, 1000);
+}
+
+function renderOptions(){
+   const optionsContainer = document.getElementById('options');
+   optionsContainer.innerHTML = '';
+
+   const phaseData = ensurePhaseData(current);
+   if (currentQuestionIdx >= phaseData.questions.length) currentQuestionIdx = 0;
+   currentQuestion = phaseData.questions[currentQuestionIdx];
+   if (!currentQuestion) {
+     optionsContainer.textContent = 'Sem perguntas disponíveis.';
+     questionActive = false;
+     return;
+   }
+
+  // Configura texto da pergunta
   const questionText = document.getElementById('questionText');
-  const currentScene = scenes[current];
-  questionText.textContent = currentScene.question || '';
+  if (questionText) questionText.textContent = currentQuestion.text;
 
-  // renderiza as opções de resposta
+  const optionList = Array.isArray(currentQuestion.options) && currentQuestion.options.length
+    ? shuffleArray(currentQuestion.options.slice())
+    : buildFallbackOptions(Number(currentQuestion.answer) || 0);
+
+  optionList.forEach((opt) => {
+    const btn = document.createElement('button');
+    btn.className = 'botoes';
+    btn.textContent = String(opt);
+    btn.addEventListener('click', () => checkAnswer(opt));
+    optionsContainer.appendChild(btn);
+  });
+
+  questionActive = true;
+}
+
+function loadScore(){
+  try {
+    const stored = localStorage.getItem('mathup_score');
+    score = stored ? parseInt(stored, 10) || 0 : 0;
+    const storedHigh = localStorage.getItem('mathup_highscore');
+    highScore = storedHigh ? parseInt(storedHigh, 10) || 0 : 0;
+  } catch (e) {
+    score = 0;
+    highScore = 0;
+  }
+  updateScoreBoard();
+}
+
+function saveScore(){
+  try {
+    localStorage.setItem('mathup_score', String(score));
+    if (score > highScore) {
+      highScore = score;
+      localStorage.setItem('mathup_highscore', String(highScore));
+    }
+  } catch (e) {}
+}
+
+function updateScoreBoard(){
+  if (scoreBoard) scoreBoard.textContent = `Pontuação: ${score}`;
+}
+
+function checkAnswer(selectedOption){
+  if (!questionActive) return;
+  questionActive = false;
+  stopAndResetTimer();
+  disableOptions();
+
+  const expected = currentQuestion ? currentQuestion.answer : null;
+  const isCorrect = Number(selectedOption) === Number(expected);
+
+  if (!isCorrect) {
+    showFeedback('Incorreto. Tente novamente.', true);
+    score = Math.max(0, score - 10);
+    saveScore();
+    updateScoreBoard();
+    triggerFallAndLose();
+    return;
+  }
+
+  showFeedback('Correto!', false);
+  score += 50;
+  saveScore();
+  updateScoreBoard();
+  currentQuestionIdx = 0;
+
+  setTimeout(() => {
+    if (current >= scenes.length - 1) {
+      goToVictoryScreen();
+    } else {
+      advancePhase();
+    }
+  }, 600);
+}
+
+function renderQuestion(){
   renderOptions();
-
-  // reinicia o timer sempre que uma nova pergunta é exibida
   startTimer();
 }
 
@@ -432,8 +514,81 @@ window.advancePhase = advancePhase;
 // init
 renderScenes();
 updateHeaderFooter();
-// já mostramos cena atual via renderScenes
+currentQuestionIdx = 0;
+ensurePhaseData(current);
+loadScore();
 renderQuestion();
+
+function triggerFallAndLose(){
+  stopAndResetTimer();
+  stopSpriteAnimation();
+  score = 0;
+  saveScore();
+  updateScoreBoard();
+  try {
+    character.style.backgroundImage = "url('assets/PersonagemCaindo.png')";
+    character.style.backgroundSize = 'contain';
+    character.style.backgroundPosition = 'center';
+  } catch (e) {}
+
+  try {
+    const rect = character.getBoundingClientRect();
+    const reducedW = Math.max(48, Math.round(rect.width * 0.75));
+    const reducedH = Math.max(48, Math.round(rect.height * 0.75));
+    character.style.width = `${reducedW}px`;
+    character.style.height = `${reducedH}px`;
+  } catch (e) {}
+
+  try { fallSfx.currentTime = 0; fallSfx.play().catch(() => {}); } catch (e) {}
+
+  const FALL_DURATION_MS = 1100;
+  character.classList.remove('animate');
+  character.classList.remove('falling');
+
+  const computedStyle = window.getComputedStyle(character);
+  const currentTransform = computedStyle.transform || 'none';
+  const currentOpacity = computedStyle.opacity || '1';
+
+  function parseTranslateY(matrixString) {
+    try {
+      if (!matrixString || matrixString === 'none') return 0;
+      const values = matrixString.match(/matrix.*\((.+)\)/)[1].split(',').map(v => parseFloat(v.trim()));
+      if (matrixString.startsWith('matrix3d')) {
+        return values[13] || 0;
+      }
+      return values[5] || 0;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  const currentTy = parseTranslateY(currentTransform);
+  character.style.transform = `translateX(-50%) translateY(${currentTy}px)`;
+  character.style.opacity = currentOpacity;
+  character.style.transition = `transform ${FALL_DURATION_MS}ms ease-in, opacity ${FALL_DURATION_MS}ms ease-in`;
+  void character.offsetWidth;
+
+  requestAnimationFrame(() => {
+    character.style.transform = `translateX(-50%) translateY(200vh) rotate(25deg)`;
+    character.style.opacity = '0';
+    character.classList.add('falling');
+  });
+
+  const qb = document.getElementById('questionBox');
+  if (qb) qb.style.pointerEvents = 'none';
+
+  setTimeout(() => { window.location.href = 'derrota.html'; }, FALL_DURATION_MS + 100);
+}
+
+function goToVictoryScreen(){
+  stopAndResetTimer();
+  stopSpriteAnimation();
+  score += 200;
+  saveScore();
+  updateScoreBoard();
+  try { passSfx.currentTime = 0; passSfx.play().catch(()=>{}); } catch (e) {}
+  window.location.href = 'topo.html';
+}
 
 function startSpriteAnimation(durationMs) {
   if (spriteIntervalId) clearInterval(spriteIntervalId);
@@ -489,4 +644,18 @@ function stopSpriteAnimation() {
   } catch (e) {}
   character.style.backgroundPosition = `0px 0px`;
 }
+
+// expose ScoreStorage API for high score access
+(function exposeScoreAPI(){
+  try {
+    window.ScoreStorage = {
+      getCurrent: () => {
+        try { return parseInt(localStorage.getItem('mathup_score'), 10) || 0; } catch (e) { return 0; }
+      },
+      getHigh: () => {
+        try { return parseInt(localStorage.getItem('mathup_highscore'), 10) || 0; } catch (e) { return 0; }
+      }
+    };
+  } catch (e) {}
+})();
 

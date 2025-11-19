@@ -1,7 +1,7 @@
 // Som de clique para todos os botões e links com pequena espera antes de navegar
 const clickSfx = new Audio('soundeffects/Click.wav');
 clickSfx.preload = 'auto';
-clickSfx.volume = 0.9;
+clickSfx.volume = 0.63;
 
 function playClickSound() {
   try {
@@ -42,4 +42,3 @@ document.addEventListener('keydown', (e) => {
     setTimeout(() => { window.location.href = href; }, 120);
   }
 });
-

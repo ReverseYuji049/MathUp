@@ -170,7 +170,7 @@ body {
     min-height: 100vh; /* CORRIGIDO: Mude para 100vh */
     padding-top: var(--header-h);
     padding-bottom: var(--footer-h);
-    background-image: url('../assets/Ground.jpeg');
+    background-image: url('../assets/ground.png');
     background-size: 100% 100%;
     background-repeat: no-repeat;
     background-position: center;

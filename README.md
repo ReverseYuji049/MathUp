@@ -15,7 +15,7 @@ MathUp é um jogo de matemática em que o jogador responde perguntas para “sub
 ```
 MathUp/
 ├─ assets/                # Imagens e sprites (fundos, personagem, telas)
-│  ├─ Ground.jpeg
+│  ├─ ground.png
 │  ├─ Stone Tiles(1).png
 │  ├─ esboco.gif
 │  ├─ esboco.png          # Sprite sheet do personagem
@@ -57,8 +57,8 @@ Observação: Pastas antigas de fases e legado foram removidas (fases/, legacy/)
 Principais seções e responsabilidades:
 - Header e Footer fixos (barras pretas) — labels de fase e nome da área.
 - Viewport/World/Scenes — estrutura de camadas para simular a subida da montanha:
-  - `.scene-0`: Ground.jpeg (início)
-  - `.scene-1`: Stone Tiles(1).png (rochas)
+  - `.scene-0`: ground.png (início)
+  - `.scene-1`: Fase-transição-1-2.png (rochas)
   - `.scene-2`: gradiente (neve)
   - `.scene-3`: gradiente (topo)
   - As cenas são posicionadas e animadas via transform/transition para dar impressão de “a tela sobe”.
