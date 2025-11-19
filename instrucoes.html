@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Como Jogar - MathUp</title>
+  <link rel="stylesheet" href="styles/style.css">
+</head>
+<body>
+  <header>
+    <h1>Como Jogar</h1>
+  </header>
+
+  <main class="center">
+    <div class="caixa-pixel" style="width:600px; max-width:90%; text-align:left;">
+      <h2>Instruções</h2>
+      <ul>
+        <li>Leia a pergunta exibida na caixa.</li>
+        <li>Selecione a resposta que acredita estar correta.</li>
+        <li>Se a resposta estiver correta, você avançará para a próxima fase.</li>
+      </ul>
+    </div>
+
+    <a href="index.html" class="botoes" style="margin-top:20px;">Voltar</a>
+  </main>
+
+  <footer>
+    <p>MathUp - Projeto Interdisciplinar</p>
+  </footer>
+
+  <script>
+    // Som de clique para todos os botões e links
+    const clickSfx = new Audio('soundeffects/Click.wav');
+    clickSfx.preload = 'auto';
+    clickSfx.volume = 0.9;
+
+    document.addEventListener('click', (e) => {
+      const clickable = e.target.closest('a, button, .botao-start, .botao-info, .botoes');
+      if (clickable) {
+        try {
+          clickSfx.currentTime = 0;
+          clickSfx.play().catch(() => {});
+        } catch (err) {}
+      }
+    });
+  </script>
+</body>
+</html>
